@@ -1,0 +1,2 @@
+‘string’ does not name a type
+-- 头文件没有using namespace std;

@@ -1,0 +1,61 @@
+socket学习问题记录
+
+int socket(int protofamily,int so_type,int protocol)
+1.protofamily 路径类型
+	相对路径？
+2.so_type socket类型
+	区别？
+3.protocol 选择TCP/UDP
+
+可以看出socket本质上是对tcp/udp的封装。
+使用socket函数创建的实际上是接下来所要使用的协议类型的组合代号，告诉操作系统实现方式。
+为什么要确定socket类型？操作系统对不同类型有不同的实现（接口不同）
+
+
+int bind(int sockfd,const struct sockaddr* addr,socklen_t addrlen)  给地址赋值
+1.sockfd socket函数创建对socket描述符
+2.addr 具体地址
+3.addrlen 地址长度 （在c/c++中，传入指向一个具有具体大小类型的指针，不能直接得到其数据区域的长度，为了避免内存泄漏，最好同时传入长度。在此，不同类型的socket地址长度不一样）
+http://www.cnblogs.com/hnrainll/archive/2011/04/24/2026430.html
+ps:
+（1.通常使用sockaddr_in 替代sockaddr结构。其中，sin_port = 0为系统随机分配端口，sin_addr.s_addr=INADDR_ANY （为0）,为本机IP地址。htons(port),inet_addr("address")
+疑问：难道绑定时可以绑定非本机IP？有何意义？（）
+（2.数据发送方可以不bind直接connect，由系统自动bind
+
+
+int connect(int sockfd,const struct sckaddr* addr,socklen_t addrlen) 建立连接，参数同bind
+	struct sockaddr 有差异？
+	
+
+int listen(int sockfd,int backlog) 告知内核在sockfd定义的socket上监听是否有连接到来，并定义最大连接数
+1.sockfd 是由socket函数创建的socket描述符
+2.backlog 指定完成三次握手建立连接的最大数量
+内核会建立两个队列，一个syn队列，接到请求但未完成三次握手建立连接；一个ACCEPT队列，已完成三次握手建立连接，backlog指定最大数目（类似滑窗协议）
+ps:监听的不是具体的端口，而是某种协议下的行为
+问题：
+1.如何控制SYN的连接数对性能影响？（网络攻击？）
+	在配置文件中定义 /proc/sys/net/ipv4/tcp_max_syn_backlog
+	当syncookies启用时，该定义被忽略，SYN队列无逻辑上的长度限制	
+	且backlog在相应配置文件中有默认的最大128长度限制，大于128自动转为128
+2.sockfd未定义端口号，如何实现监听？
+
+
+int accept(int listen_sockfd,struct sockaddr* addr,socklen_t* addlen) 从ACCEPT队列中取出一个连接，生成新的socket描述符号
+参数含义同上，但后两个参数是传出参数。
+与Listen函数使用的sockfd的区别：listen_sockfd中没有对地址进行初始化（只针对本机端口），而accept_sockfd中包含请求方的socket信息。
+
+
+
+int send()
+
+int recv()  注意使用的sockfd是accept后新分配的socket描述符。（监听socket只负责监听到来的请求，accept建立连接后对特定请求端分配特定的socket，可以实现与多个用户端通信）
+
+发送string会出现乱码，而发送char*不会。string包含了封装信息，接収到buffer中的数据不只是string内容本身，需要专门解析才能获取。（可能跟流文件发送方式有关系） 
+
+
+ps:
+包含errno.h，查看errno变量，查表找错。
+close()函数在unistd.h中定义
+
+
+
